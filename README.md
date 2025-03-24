@@ -2,6 +2,9 @@
 
 A modern web application for recording, playing, and sharing audio recordings. Built with React, Vite, and Material-UI.
 
+## Live Demo
+Visit the live application at: [Voice Recorder App](https://voice-recorder-app-shankersingh01s-projects.vercel.app/)
+
 ## Features
 
 - Audio recording with microphone permission
