@@ -26,7 +26,7 @@ Visit the live application at: [Voice Recorder App](https://voice-recorder-app-s
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/shankersingh01/Voice-Recorder-App.git
 cd voice-recorder-app
 ```
 
