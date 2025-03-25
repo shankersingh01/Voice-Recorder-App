@@ -3,50 +3,40 @@ import { useNavigate } from "react-router-dom";
 import MicIcon from "@mui/icons-material/Mic";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ShareIcon from "@mui/icons-material/Share";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 const HomeScreen = () => {
   const navigate = useNavigate();
-  const [lastRecording, setLastRecording] = useState(null);
   const [error, setError] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    // Get the last recording from localStorage
-    const savedRecording = localStorage.getItem("lastRecording");
-    if (savedRecording) {
-      try {
-        const blob = new Blob([JSON.parse(savedRecording)], {
-          type: "audio/webm",
-        });
-        setLastRecording(blob);
-      } catch (err) {
-        console.error("Error loading recording:", err);
-        setError("Error loading recording");
-      }
-    }
-  }, []);
+  const handleFileSelect = () => {
+    // Create a file input element if it doesn't exist
+    if (!fileInputRef.current) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "audio/*";
+      fileInputRef.current = input;
 
-  const handlePlayRecording = () => {
-    if (!lastRecording) {
-      setError("No recording available to play");
-      return;
-    }
-
-    try {
-      if (audioRef.current) {
-        if (isPlaying) {
-          audioRef.current.pause();
-        } else {
-          audioRef.current.play();
+      // Handle file selection
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          try {
+            // Create a URL for the selected file
+            const url = URL.createObjectURL(file);
+            // Navigate to record screen with the file URL
+            navigate("/record", { state: { selectedFile: url } });
+          } catch (err) {
+            console.error("Error loading file:", err);
+            setError("Error loading audio file");
+          }
         }
-        setIsPlaying(!isPlaying);
-      }
-    } catch (err) {
-      console.error("Error playing recording:", err);
-      setError("Error playing recording");
+      };
     }
+
+    // Trigger file selection dialog
+    fileInputRef.current.click();
   };
 
   return (
@@ -94,11 +84,10 @@ const HomeScreen = () => {
             variant="outlined"
             size="large"
             startIcon={<PlayArrowIcon />}
-            onClick={handlePlayRecording}
-            disabled={!lastRecording}
+            onClick={handleFileSelect}
             sx={{ py: 2 }}
           >
-            {isPlaying ? "Pause Recording" : "Play Recording"}
+            Select Audio File
           </Button>
 
           <Button
@@ -106,19 +95,11 @@ const HomeScreen = () => {
             size="large"
             startIcon={<ShareIcon />}
             onClick={() => navigate("/share")}
-            disabled={!lastRecording}
             sx={{ py: 2 }}
           >
             Share Recording
           </Button>
         </Box>
-
-        <audio
-          ref={audioRef}
-          src={lastRecording ? URL.createObjectURL(lastRecording) : null}
-          onEnded={() => setIsPlaying(false)}
-          style={{ display: "none" }}
-        />
       </Box>
     </Container>
   );

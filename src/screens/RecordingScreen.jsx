@@ -12,6 +12,8 @@ import StopIcon from "@mui/icons-material/Stop";
 import SaveIcon from "@mui/icons-material/Save";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PauseIcon from "@mui/icons-material/Pause";
 
 const RecordingScreen = () => {
   const navigate = useNavigate();
@@ -22,12 +24,15 @@ const RecordingScreen = () => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const waveformRef = useRef(null);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
+  const audioRef = useRef(null);
+  const [audioUrl, setAudioUrl] = useState(null);
 
   useEffect(() => {
     return () => {
@@ -39,6 +44,10 @@ const RecordingScreen = () => {
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
       }
     };
   }, []);
@@ -112,6 +121,11 @@ const RecordingScreen = () => {
       chunksRef.current = []; // Reset chunks array
       setHasStopped(false);
       setAudioBlob(null);
+      setIsPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
 
       // First, check if we have permission
       const permissionStatus = await navigator.permissions.query({
@@ -201,9 +215,37 @@ const RecordingScreen = () => {
   const resetRecording = () => {
     setHasStopped(false);
     setAudioBlob(null);
+    setIsPlaying(false);
+    setAudioUrl(null);
     chunksRef.current = [];
     if (waveformRef.current) {
       waveformRef.current.innerHTML = "";
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (!audioRef.current || !audioBlob) return;
+
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        // Create a new URL for the blob if it doesn't exist
+        if (!audioUrl) {
+          const url = URL.createObjectURL(audioBlob);
+          setAudioUrl(url);
+          audioRef.current.src = url;
+        }
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    } catch (err) {
+      console.error("Error playing audio:", err);
+      setError("Error playing audio");
     }
   };
 
@@ -336,9 +378,26 @@ const RecordingScreen = () => {
               >
                 Reset Recording
               </Button>
+              {audioBlob && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+                  onClick={handlePlayPause}
+                  sx={{ py: 2 }}
+                >
+                  {isPlaying ? "Pause" : "Play"}
+                </Button>
+              )}
             </>
           )}
         </Box>
+
+        <audio
+          ref={audioRef}
+          onEnded={() => setIsPlaying(false)}
+          style={{ display: "none" }}
+        />
       </Box>
     </Container>
   );
