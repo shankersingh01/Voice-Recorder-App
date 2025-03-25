@@ -7,7 +7,7 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import StopIcon from "@mui/icons-material/Stop";
 import SaveIcon from "@mui/icons-material/Save";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -17,6 +17,7 @@ import PauseIcon from "@mui/icons-material/Pause";
 
 const RecordingScreen = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isRecording, setIsRecording] = useState(false);
   const [hasStopped, setHasStopped] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -25,6 +26,7 @@ const RecordingScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
   const waveformRef = useRef(null);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -32,9 +34,18 @@ const RecordingScreen = () => {
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const audioRef = useRef(null);
-  const [audioUrl, setAudioUrl] = useState(null);
 
   useEffect(() => {
+    // Check if there's a selected file from HomeScreen
+    if (location.state?.selectedFile) {
+      setAudioUrl(location.state.selectedFile);
+      setHasStopped(true);
+      // Set up audio element for selected file
+      if (audioRef.current) {
+        audioRef.current.src = location.state.selectedFile;
+      }
+    }
+
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -50,7 +61,7 @@ const RecordingScreen = () => {
         audioRef.current.src = "";
       }
     };
-  }, []);
+  }, [location.state]);
 
   const visualize = (stream) => {
     if (!waveformRef.current) return;
@@ -228,14 +239,17 @@ const RecordingScreen = () => {
   };
 
   const handlePlayPause = () => {
-    if (!audioRef.current || !audioBlob) return;
+    if (!audioRef.current) return;
 
     try {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        // Create a new URL for the blob if it doesn't exist
-        if (!audioUrl) {
+        // If we have a selected file URL, use it directly
+        if (audioUrl) {
+          audioRef.current.src = audioUrl;
+        } else if (audioBlob) {
+          // For recorded audio, create a new URL if needed
           const url = URL.createObjectURL(audioBlob);
           setAudioUrl(url);
           audioRef.current.src = url;
@@ -353,22 +367,24 @@ const RecordingScreen = () => {
             </Button>
           ) : (
             <>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={
-                  isSaving ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <SaveIcon />
-                  )
-                }
-                onClick={saveRecording}
-                disabled={!audioBlob || isSaving}
-                sx={{ py: 2 }}
-              >
-                {isSaving ? "Processing..." : "Save Voice Memo"}
-              </Button>
+              {audioBlob && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={
+                    isSaving ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <SaveIcon />
+                    )
+                  }
+                  onClick={saveRecording}
+                  disabled={!audioBlob || isSaving}
+                  sx={{ py: 2 }}
+                >
+                  {isSaving ? "Processing..." : "Save Voice Memo"}
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 color="secondary"
@@ -378,7 +394,7 @@ const RecordingScreen = () => {
               >
                 Reset Recording
               </Button>
-              {audioBlob && (
+              {(audioBlob || audioUrl) && (
                 <Button
                   variant="outlined"
                   color="primary"

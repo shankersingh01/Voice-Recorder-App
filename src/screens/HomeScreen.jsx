@@ -26,7 +26,13 @@ const HomeScreen = () => {
             // Create a URL for the selected file
             const url = URL.createObjectURL(file);
             // Navigate to record screen with the file URL
-            navigate("/record", { state: { selectedFile: url } });
+            navigate("/record", {
+              state: {
+                selectedFile: url,
+                fileName: file.name,
+                fileType: file.type,
+              },
+            });
           } catch (err) {
             console.error("Error loading file:", err);
             setError("Error loading audio file");
@@ -48,9 +54,18 @@ const HomeScreen = () => {
           alignItems: "center",
           minHeight: "100vh",
           py: 4,
+          px: { xs: 2, sm: 0 },
         }}
       >
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{
+            fontSize: { xs: "24px", sm: "32px" }, // Responsive font size
+            textAlign: "center",
+          }}
+        >
           Voice Recorder
         </Typography>
 
